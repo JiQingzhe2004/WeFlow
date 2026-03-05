@@ -38,6 +38,7 @@ import {
   onOpenSingleExport
 } from '../services/exportBridge'
 import { useContactTypeCountsStore } from '../stores/contactTypeCountsStore'
+import { SnsPostItem } from '../components/Sns/SnsPostItem'
 import type { SnsPost } from '../types/sns'
 import './ExportPage.scss'
 
@@ -429,12 +430,6 @@ const isSingleContactSession = (sessionId: string): boolean => {
   if (normalized.includes('@chatroom')) return false
   if (normalized.startsWith('gh_')) return false
   return true
-}
-
-const isSnsVideoMediaUrl = (url?: string): boolean => {
-  if (!url) return false
-  const lower = url.toLowerCase()
-  return (lower.includes('snsvideodownload') || lower.includes('.mp4') || lower.includes('video')) && !lower.includes('vweixinthumb')
 }
 
 const formatPathBrief = (value: string, maxLength = 52): string => {
@@ -2085,7 +2080,7 @@ function ExportPage() {
     }
 
     void loadSessionSnsTimelinePosts(target, { reset: true })
-    void loadSnsUserPostCounts()
+    void loadSnsUserPostCounts({ force: true })
   }, [
     loadSessionSnsTimelinePosts,
     loadSnsUserPostCounts,
@@ -4658,8 +4653,11 @@ function ExportPage() {
     if (!sessionId) return
     detailStatsPriorityRef.current = true
     setShowSessionDetailPanel(true)
+    if (isSingleContactSession(sessionId)) {
+      void loadSnsUserPostCounts({ force: true })
+    }
     void loadSessionDetail(sessionId)
-  }, [loadSessionDetail])
+  }, [loadSessionDetail, loadSnsUserPostCounts])
 
   useEffect(() => {
     if (!showSessionDetailPanel) return
@@ -5785,42 +5783,21 @@ function ExportPage() {
 
                 <div className="sns-dialog-body">
                   {sessionSnsTimelinePosts.length > 0 && (
-                    <div className="sns-post-list">
+                    <div className="posts-list author-timeline-posts-list export-session-sns-posts-list">
                       {sessionSnsTimelinePosts.map((post) => (
-                        <article className="sns-post-card" key={post.id}>
-                          <div className="sns-post-time">{formatYmdHmDateTime(post.createTime * 1000)}</div>
-                          {post.contentDesc && <div className="sns-post-content">{post.contentDesc}</div>}
-                          {Array.isArray(post.media) && post.media.length > 0 && (
-                            <div className="sns-post-media-grid">
-                              {post.media.slice(0, 9).map((media, mediaIndex) => {
-                                const mediaUrl = String(media?.url || media?.thumb || '')
-                                const previewUrl = String(media?.thumb || media?.url || '')
-                                if (!mediaUrl || !previewUrl) return null
-                                const isVideo = isSnsVideoMediaUrl(mediaUrl)
-                                return (
-                                  <button
-                                    className="sns-post-media-item"
-                                    key={`${post.id}-media-${mediaIndex}`}
-                                    type="button"
-                                    onClick={() => {
-                                      if (isVideo) {
-                                        void window.electronAPI.window.openVideoPlayerWindow(mediaUrl)
-                                        return
-                                      }
-                                      void window.electronAPI.window.openImageViewerWindow(
-                                        mediaUrl,
-                                        media?.livePhoto?.url || undefined
-                                      )
-                                    }}
-                                  >
-                                    <img src={previewUrl} alt="" loading="lazy" referrerPolicy="no-referrer" />
-                                    {isVideo && <span className="sns-post-media-video-tag">视频</span>}
-                                  </button>
-                                )
-                              })}
-                            </div>
-                          )}
-                        </article>
+                        <SnsPostItem
+                          key={post.id}
+                          post={post}
+                          onPreview={(src, isVideo, liveVideoPath) => {
+                            if (isVideo) {
+                              void window.electronAPI.window.openVideoPlayerWindow(src)
+                            } else {
+                              void window.electronAPI.window.openImageViewerWindow(src, liveVideoPath || undefined)
+                            }
+                          }}
+                          onDebug={() => {}}
+                          hideAuthorMeta
+                        />
                       ))}
                     </div>
                   )}
