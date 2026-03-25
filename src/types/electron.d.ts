@@ -838,7 +838,7 @@ export interface ElectronAPI {
     getLogs: () => Promise<string[]>
   }
   http: {
-    start: (port?: number) => Promise<{ success: boolean; port?: number; error?: string }>
+    start: (port?: number, host?: string) => Promise<{ success: boolean; port?: number; error?: string }>
     stop: () => Promise<{ success: boolean }>
     status: () => Promise<{ running: boolean; port: number; mediaExportPath: string }>
   }

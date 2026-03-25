@@ -2605,8 +2605,9 @@ function registerIpcHandlers() {
   })
 
   // HTTP API 服务
-  ipcMain.handle('http:start', async (_, port?: number) => {
-    return httpService.start(port || 5031)
+  ipcMain.handle('http:start', async (_, port?: number, host?: string) => {
+    const bindHost = typeof host === 'string' && host.trim() ? host.trim() : '127.0.0.1'
+    return httpService.start(port || 5031, bindHost)
   })
 
   ipcMain.handle('http:stop', async () => {

@@ -190,6 +190,7 @@ function SettingsPage({ onClose }: SettingsPageProps = {}) {
   // HTTP API 设置 state
   const [httpApiEnabled, setHttpApiEnabled] = useState(false)
   const [httpApiPort, setHttpApiPort] = useState(5031)
+  const [httpApiHost, setHttpApiHost] = useState('127.0.0.1')
   const [httpApiRunning, setHttpApiRunning] = useState(false)
   const [httpApiMediaExportPath, setHttpApiMediaExportPath] = useState('')
   const [isTogglingApi, setIsTogglingApi] = useState(false)
@@ -348,6 +349,9 @@ function SettingsPage({ onClose }: SettingsPageProps = {}) {
 
       const savedApiPort = await configService.getHttpApiPort()
       if (savedApiPort) setHttpApiPort(savedApiPort)
+
+      const savedApiHost = await configService.getHttpApiHost()
+      if (savedApiHost) setHttpApiHost(savedApiHost)
 
       setAuthEnabled(savedAuthEnabled)
       setAuthUseHello(savedAuthUseHello)
@@ -1871,7 +1875,7 @@ function SettingsPage({ onClose }: SettingsPageProps = {}) {
     setShowApiWarning(false)
     setIsTogglingApi(true)
     try {
-      const result = await window.electronAPI.http.start(httpApiPort)
+      const result = await window.electronAPI.http.start(httpApiPort, httpApiHost)
       if (result.success) {
         setHttpApiRunning(true)
         if (result.port) setHttpApiPort(result.port)
@@ -1891,7 +1895,7 @@ function SettingsPage({ onClose }: SettingsPageProps = {}) {
   }
 
   const handleCopyApiUrl = () => {
-    const url = `http://127.0.0.1:${httpApiPort}`
+    const url = `http://${httpApiHost}:${httpApiPort}`
     navigator.clipboard.writeText(url)
     showMessage('已复制 API 地址', true)
   }
@@ -1921,6 +1925,26 @@ function SettingsPage({ onClose }: SettingsPageProps = {}) {
             <span className="switch-slider" />
           </label>
         </div>
+      </div>
+
+      <div className="form-group">
+        <label>监听地址</label>
+        <span className="form-hint">
+          API 服务绑定的主机地址。默认 <code>127.0.0.1</code> 仅本机访问；Docker/N8N 等容器场景请改为 <code>0.0.0.0</code> 以允许外部访问（注意配合 Token 鉴权）
+        </span>
+        <input
+            type="text"
+            className="field-input"
+            value={httpApiHost}
+            placeholder="127.0.0.1"
+            onChange={(e) => {
+              const host = e.target.value.trim() || '127.0.0.1'
+              setHttpApiHost(host)
+              scheduleConfigSave('httpApiHost', () => configService.setHttpApiHost(host))
+            }}
+            disabled={httpApiRunning}
+            style={{ width: 180, fontFamily: 'monospace' }}
+        />
       </div>
 
       <div className="form-group">
@@ -1980,7 +2004,7 @@ function SettingsPage({ onClose }: SettingsPageProps = {}) {
             <input
               type="text"
               className="field-input"
-              value={`http://127.0.0.1:${httpApiPort}`}
+              value={`http://${httpApiHost}:${httpApiPort}`}
               readOnly
             />
             <button className="btn btn-secondary" onClick={handleCopyApiUrl} title="复制">
@@ -2029,13 +2053,13 @@ function SettingsPage({ onClose }: SettingsPageProps = {}) {
           <input
               type="text"
               className="field-input"
-              value={`http://127.0.0.1:${httpApiPort}/api/v1/push/messages${httpApiToken ? `?access_token=${httpApiToken}` : ''}`}
+              value={`http://${httpApiHost}:${httpApiPort}/api/v1/push/messages${httpApiToken ? `?access_token=${httpApiToken}` : ''}`}
               readOnly
           />
           <button
               className="btn btn-secondary"
               onClick={() => {
-                navigator.clipboard.writeText(`http://127.0.0.1:${httpApiPort}/api/v1/push/messages${httpApiToken ? `?access_token=${httpApiToken}` : ''}`)
+                navigator.clipboard.writeText(`http://${httpApiHost}:${httpApiPort}/api/v1/push/messages${httpApiToken ? `?access_token=${httpApiToken}` : ''}`)
                 showMessage('已复制推送地址', true)
               }}
               title="复制"
@@ -2052,7 +2076,7 @@ function SettingsPage({ onClose }: SettingsPageProps = {}) {
           <div className="api-item">
             <div className="api-endpoint">
               <span className="method get">GET</span>
-              <code>{`http://127.0.0.1:${httpApiPort}/api/v1/push/messages`}</code>
+              <code>{`http://${httpApiHost}:${httpApiPort}/api/v1/push/messages`}</code>
             </div>
             <p className="api-desc">通过 SSE 长连接接收消息事件，建议接收端按 `messageKey` 去重。</p>
             <div className="api-params">

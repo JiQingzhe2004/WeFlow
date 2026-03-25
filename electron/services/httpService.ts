@@ -101,6 +101,7 @@ class HttpService {
   private server: http.Server | null = null
   private configService: ConfigService
   private port: number = 5031
+  private host: string = '127.0.0.1'
   private running: boolean = false
   private connections: Set<import('net').Socket> = new Set()
   private messagePushClients: Set<http.ServerResponse> = new Set()
@@ -114,12 +115,13 @@ class HttpService {
   /**
    * 启动 HTTP 服务
    */
-  async start(port: number = 5031): Promise<{ success: boolean; port?: number; error?: string }> {
+  async start(port: number = 5031, host: string = '127.0.0.1'): Promise<{ success: boolean; port?: number; error?: string }> {
     if (this.running && this.server) {
       return { success: true, port: this.port }
     }
 
     this.port = port
+    this.host = host
 
     return new Promise((resolve) => {
       this.server = http.createServer((req, res) => this.handleRequest(req, res))
@@ -153,10 +155,10 @@ class HttpService {
         }
       })
 
-      this.server.listen(this.port, '127.0.0.1', () => {
+      this.server.listen(this.port, this.host, () => {
         this.running = true
         this.startMessagePushHeartbeat()
-        console.log(`[HttpService] HTTP API server started on http://127.0.0.1:${this.port}`)
+        console.log(`[HttpService] HTTP API server started on http://${this.host}:${this.port}`)
         resolve({ success: true, port: this.port })
       })
     })
@@ -225,7 +227,7 @@ class HttpService {
   }
 
   getMessagePushStreamUrl(): string {
-    return `http://127.0.0.1:${this.port}/api/v1/push/messages`
+    return `http://${this.host}:${this.port}/api/v1/push/messages`
   }
 
   broadcastMessagePush(payload: Record<string, unknown>): void {
@@ -250,8 +252,9 @@ class HttpService {
     const enabled = this.configService.get('httpApiEnabled')
     if (enabled) {
       const port = Number(this.configService.get('httpApiPort')) || 5031
+      const host = String(this.configService.get('httpApiHost') || '127.0.0.1').trim() || '127.0.0.1'
       try {
-        await this.start(port)
+        await this.start(port, host)
         console.log(`[HttpService] Auto-started on port ${port}`)
       } catch (err) {
         console.error('[HttpService] Auto-start failed:', err)
@@ -314,7 +317,7 @@ class HttpService {
             return
         }
 
-        const url = new URL(req.url || '/', `http://127.0.0.1:${this.port}`)
+        const url = new URL(req.url || '/', `http://${this.host}:${this.port}`)
         const pathname = url.pathname
 
         try {
@@ -961,7 +964,7 @@ class HttpService {
       parsedContent: msg.parsedContent,
       mediaType: media?.kind,
       mediaFileName: media?.fileName,
-      mediaUrl: media ? `http://127.0.0.1:${this.port}/api/v1/media/${media.relativePath}` : undefined,
+      mediaUrl: media ? `http://${this.host}:${this.port}/api/v1/media/${media.relativePath}` : undefined,
       mediaLocalPath: media?.fullPath
     }
   }
@@ -1231,7 +1234,7 @@ class HttpService {
         type: this.mapMessageType(msg.localType, msg),
         content: this.getMessageContent(msg),
         platformMessageId: msg.serverId ? String(msg.serverId) : undefined,
-        mediaPath: mediaMap.get(msg.localId) ? `http://127.0.0.1:${this.port}/api/v1/media/${mediaMap.get(msg.localId)!.relativePath}` : undefined
+        mediaPath: mediaMap.get(msg.localId) ? `http://${this.host}:${this.port}/api/v1/media/${mediaMap.get(msg.localId)!.relativePath}` : undefined
       }
     })
 

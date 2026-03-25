@@ -67,6 +67,7 @@ export const CONFIG_KEYS = {
   HTTP_API_TOKEN: 'httpApiToken',
   HTTP_API_ENABLED: 'httpApiEnabled',
   HTTP_API_PORT: 'httpApiPort',
+  HTTP_API_HOST: 'httpApiHost',
   MESSAGE_PUSH_ENABLED: 'messagePushEnabled',
   WINDOW_CLOSE_BEHAVIOR: 'windowCloseBehavior',
   QUOTE_LAYOUT: 'quoteLayout',
@@ -1508,4 +1509,13 @@ export async function getHttpApiPort(): Promise<number> {
 // 设置 HTTP API 端口
 export async function setHttpApiPort(port: number): Promise<void> {
   await config.set(CONFIG_KEYS.HTTP_API_PORT, port)
+}
+
+export async function getHttpApiHost(): Promise<string> {
+  const value = await config.get(CONFIG_KEYS.HTTP_API_HOST)
+  return typeof value === 'string' && value.trim() ? value.trim() : '127.0.0.1'
+}
+
+export async function setHttpApiHost(host: string): Promise<void> {
+  await config.set(CONFIG_KEYS.HTTP_API_HOST, host)
 }

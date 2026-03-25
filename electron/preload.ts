@@ -422,7 +422,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
 
   // HTTP API 服务
   http: {
-    start: (port?: number) => ipcRenderer.invoke('http:start', port),
+    start: (port?: number, host?: string) => ipcRenderer.invoke('http:start', port, host),
     stop: () => ipcRenderer.invoke('http:stop'),
     status: () => ipcRenderer.invoke('http:status')
   }

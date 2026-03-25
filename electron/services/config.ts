@@ -54,6 +54,7 @@ interface ConfigSchema {
   messagePushEnabled: boolean
   httpApiEnabled: boolean
   httpApiPort: number
+  httpApiHost: string
   httpApiToken: string
   windowCloseBehavior: 'ask' | 'tray' | 'quit'
   quoteLayout: 'quote-top' | 'quote-bottom'
@@ -125,6 +126,7 @@ export class ConfigService {
       httpApiToken: '',
       httpApiEnabled: false,
       httpApiPort: 5031,
+      httpApiHost: '127.0.0.1',
       messagePushEnabled: false,
       windowCloseBehavior: 'ask',
       quoteLayout: 'quote-top',
